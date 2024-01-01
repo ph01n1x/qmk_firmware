@@ -24,7 +24,7 @@ If there are any inconsistencies with these recommendations, you're best off [cr
     - no "old-school" or other low-level GPIO/I2C/SPI functions may be used -- must use QMK abstractions unless justifiable (and laziness is not valid justification)
     - timing abstractions should be followed too:
         - `wait_ms()` instead of `_delay_ms()` (remove `#include <util/delay.h>` too)
-        - `timer_read()` and `timer_read32()` etc. -- see [timer.h](https://github.com/qmk/qmk_firmware/blob/master/tmk_core/common/timer.h) for the timing APIs
+        - `timer_read()` and `timer_read32()` etc. -- see [timer.h](https://github.com/qmk/qmk_firmware/blob/master/platforms/timer.h) for the timing APIs
     - if you think a new abstraction is useful, you're encouraged to:
         - prototype it in your own keyboard until it's feature-complete
         - discuss it with QMK Collaborators on Discord
@@ -110,6 +110,8 @@ Also, specific to ChibiOS:
     - a lot of the time, an equivalent Nucleo board can be used with a different flash size or slightly different model in the same family
         - example: For an STM32L082KZ, given the similarity to an STM32L073RZ, you can use `BOARD = ST_NUCLEO64_L073RZ` in rules.mk
     - QMK is migrating to not having custom board definitions if at all possible, due to the ongoing maintenance burden when upgrading ChibiOS
+- New board definitions must not be embedded in a keyboard PR
+    - See _Core PRs_ below for the procedure for adding a new board to QMK
 - if a board definition is unavoidable, `board.c` must have a standard `__early_init()` (as per normal ChibiOS board defs) and an empty `boardInit()`:
     - see Arm/ChibiOS [early initialization](https://docs.qmk.fm/#/platformdev_chibios_earlyinit?id=board-init)
     - `__early_init()` should be replaced by either `early_hardware_init_pre()` or `early_hardware_init_post()` as appropriate
@@ -118,6 +120,10 @@ Also, specific to ChibiOS:
 ## Core PRs
 
 - must now target `develop` branch, which will subsequently be merged back to `master` on the breaking changes timeline
+- any new boards adding support for new hardware now requires a corresponding test board under `keyboards/handwired/onekey`
+    - for new MCUs, a new "child" keyboard should be added that targets your newly-added MCU, so that builds can be verified
+    - for new hardware support such as display panels, core-side matrix implementations, or other peripherals, an associated keymap should be provided
+    - if an existing keymap exists that can leverage this functionality this may not be required (e.g. a new RGB driver chip, supported by the `rgb` keymap) -- consult with the QMK Collaborators on Discord to determine if there is sufficient overlap already
 - other requirements are at the discretion of QMK collaborators
     - core is a lot more subjective given the breadth of posted changes
 
