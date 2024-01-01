@@ -1,3 +1,13 @@
+# QMK MSYS
+
+# Update the package database and core system packages with:
+
+pacman -Syu  
+
+# If needed, close QMK MSYS, run it again from Start menu. Update the rest with:
+
+pacman -Su
+
 # Customized Keyboard Firmware
 
 ## [Zodiark](https://www.splitlogic.xyz/) 
