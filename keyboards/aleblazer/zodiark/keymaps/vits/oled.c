@@ -478,7 +478,7 @@ static void display_status(void)
 }
 
 // OLED display
-void oled_task_user(void) 
+bool oled_task_user(void) 
 {
     if (is_keyboard_master()) 
     {
@@ -523,6 +523,8 @@ void oled_task_user(void)
         
         display_status();
     }
+    
+    return false;
 }
 
 #endif
