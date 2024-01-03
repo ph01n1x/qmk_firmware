@@ -21,7 +21,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   #define OLED_TIMEOUT 400000
 #endif
 
+#define SPLIT_LAYER_STATE_ENABLE
 #define SPLIT_LED_STATE_ENABLE
 #define SPLIT_OLED_ENABLE
 
 #define RGBLIGHT_EFFECT_RAINBOW_SWIRL
+
+/* Set 0 if debouncing isn't needed */
+#define DEBOUNCE 5
+
+/* Data sync */
+#define SPLIT_TRANSACTION_IDS_USER USER_SYNC_A
+

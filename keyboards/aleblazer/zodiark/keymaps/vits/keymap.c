@@ -13,6 +13,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include QMK_KEYBOARD_H
 
+#include "transactions.h"
+
 enum custom_keycodes 
 {
     KC_ENCT = SAFE_RANGE,  // Toggle encoder mode
@@ -63,10 +65,15 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 };
 
 #define ANIMATION_SLEEP 0
-#define ANIMATION_NORMAL 1
-#define ANIMATION_RUN 2
-#define ANIMATION_JUMP 3
-#define ANIMATION_RTOGIL 4
+#define ANIMATION_AWAKE 1
+#define ANIMATION_NORMAL 2
+#define ANIMATION_KAKI 3
+#define ANIMATION_YAWN 4
+#define ANIMATION_RUN 5
+#define ANIMATION_UP 6
+#define ANIMATION_DOWN 7
+#define ANIMATION_JUMP 8
+#define ANIMATION_RTOGIL 9
 
 uint8_t target_animation = 0;
 uint8_t current_animation = 0;
@@ -103,14 +110,28 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record)
     
     switch (keycode) 
     {
+        case KC_UP:
+        case KC_PGUP:
+            if (current_animation != ANIMATION_UP)
+            {
+                target_animation = ANIMATION_UP;
+                target_animation_runs = 1;
+            }
+            break;
+            
+        case KC_DOWN:  
+        case KC_PGDN:
+            if (current_animation != ANIMATION_DOWN)
+            {
+                target_animation = ANIMATION_DOWN;
+                target_animation_runs = 1;
+            }
+            break;
+        
         case KC_TAB:
         case KC_SPACE:
         case KC_LEFT:
         case KC_RIGHT:
-        case KC_UP:
-        case KC_DOWN:
-        case KC_PGUP:
-        case KC_PGDN:
         case KC_HOME:
         case KC_END:
             if (current_animation != ANIMATION_JUMP)
@@ -164,3 +185,20 @@ void matrix_scan_user(void)
 
 #include "oled.c"
 #include "encoder.c"
+#include "datasync.c"
+
+// Run after keyboard is initialized
+void keyboard_post_init_user(void) 
+{
+    transaction_register_rpc(USER_SYNC_A, user_sync_a_slave_handler);
+}
+
+// House keeping after each processing
+void housekeeping_task_user(void) 
+{
+    if (is_keyboard_master()) 
+    {
+        user_sync_a_master_to_slave();
+    }
+}
+    

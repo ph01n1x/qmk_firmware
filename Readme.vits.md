@@ -1,5 +1,11 @@
 # QMK MSYS
 
+# To start MSYS in specified directory.
+
+Add the following to .bash_profile located in your user's home directory
+
+cd <Startup_Directory>
+
 # Update the package database and core system packages with:
 
 pacman -Syu  
@@ -9,6 +15,21 @@ pacman -Syu
 pacman -Su
 
 # Customized Keyboard Firmware
+
+## For converting image to Arduino C code
+
+https://javl.github.io/image2cpp/
+
+For OLED module, black and white picture. Set to
+
+Image Settings: Invert image color
+Code output format: Plain Bytes
+Draw mode: Vertical - 1 bit per pixel.
+
+## For RP2040 Build
+add -e CONVERT_TO=helios
+
+qmk flash -j 6 -kb aleblazer/zodiark -km vits  -e CONVERT_TO=helios
 
 ## [Zodiark](https://www.splitlogic.xyz/) 
 [Build Guide](https://www.splitlogic.xyz/buildguides/zodiark-build-guide)
