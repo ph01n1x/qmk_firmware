@@ -94,6 +94,8 @@ uint16_t super_tab_timer = 0;
 
 uint8_t encoder2_mode = ENCODER_WIN;
 
+bool is_oled_enabled = true;
+
 // Handling of the special layer
 layer_state_t layer_state_set_user(layer_state_t state) 
 {
@@ -106,6 +108,7 @@ layer_state_t layer_state_set_user(layer_state_t state)
 bool process_record_user(uint16_t keycode, keyrecord_t *record) 
 {
     keyevent_timer = timer_read32();
+    is_oled_enabled = true;
     target_animation = ANIMATION_RUN;
     
     switch (keycode) 
@@ -115,7 +118,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record)
             if (current_animation != ANIMATION_UP)
             {
                 target_animation = ANIMATION_UP;
-                target_animation_runs = 1;
+                target_animation_runs = 2;
             }
             break;
             
@@ -124,7 +127,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record)
             if (current_animation != ANIMATION_DOWN)
             {
                 target_animation = ANIMATION_DOWN;
-                target_animation_runs = 1;
+                target_animation_runs = 2;
             }
             break;
         
@@ -191,11 +194,30 @@ void matrix_scan_user(void)
 void keyboard_post_init_user(void) 
 {
     transaction_register_rpc(USER_SYNC_A, user_sync_a_slave_handler);
+    
+    if (is_keyboard_master()) 
+    {
+        current_animation = ANIMATION_SLEEP;
+        target_animation = ANIMATION_SLEEP;
+        target_animation_runs = 0;
+    }
+    else
+    {
+        current_animation = ANIMATION_AWAKE;
+        target_animation = ANIMATION_AWAKE;
+        target_animation_runs = 3;
+    }
 }
 
 // House keeping after each processing
 void housekeeping_task_user(void) 
 {
+    if (is_keyboard_master() 
+        && timer_elapsed32(keyevent_timer) > OLED_TIMEOUT)     
+    {
+        is_oled_enabled = false;
+    }
+    
     if (is_keyboard_master()) 
     {
         user_sync_a_master_to_slave();

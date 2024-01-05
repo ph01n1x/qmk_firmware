@@ -18,12 +18,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #ifdef OLED_ENABLE
   #define OLED_DISPLAY_128X64
-  #define OLED_TIMEOUT 400000
+  #define OLED_TIMEOUT 300000
 #endif
 
 #define SPLIT_LAYER_STATE_ENABLE
 #define SPLIT_LED_STATE_ENABLE
-#define SPLIT_OLED_ENABLE
 
 #define RGBLIGHT_EFFECT_RAINBOW_SWIRL
 
