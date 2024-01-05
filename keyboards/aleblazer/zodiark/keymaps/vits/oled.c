@@ -41,6 +41,26 @@ static void draw_image(const char *image, uint8_t x, uint8_t y, uint8_t width, u
     }
 }
 
+// Draw an image
+// x is specified as pixels
+// y is specified as OLED cursor line position
+// Image must be of height of multiple of s
+static void clear_image(uint8_t x, uint8_t y, uint8_t width, uint8_t height)
+{
+    uint8_t maxLine = height / 8;
+    uint16_t offset = 0;
+    
+    for (uint8_t currentLine = 0; currentLine < maxLine; currentLine++)
+    {
+        offset = (y + currentLine) * OLED_DISPLAY_HEIGHT + x;
+        
+        for (uint8_t currentColumn = 0; currentColumn < width; currentColumn++)
+        {
+           oled_write_raw_byte(0x00, offset + currentColumn);
+        }
+    }        
+}
+
 // Initialize OLED screen
 oled_rotation_t oled_init_user(oled_rotation_t rotation) 
 {
@@ -68,7 +88,11 @@ uint8_t current_frame = 0;
 uint8_t current_animation_runs = 0;
 
 int8_t current_x = 0;
+int8_t current_y = 8;
 bool movement_reverse = false;
+
+int8_t last_x = -1;
+int8_t last_y = -1;
 
 #define CHARACTER_NEKO 0
 #define CHARACTER_SAKURA 1
@@ -320,19 +344,13 @@ void draw_animation_frame(int y, int character)
     if (image != 0)
     {
         // Erase previous contents
-        if (character == CHARACTER_NEKO)
-        {
-            for (uint8_t py = (y - 2); py < (y - 2) + 6; py++)
-            {
-                for (uint8_t px = 0; px < OLED_DISPLAY_HEIGHT; px++)
-                {
-                    uint16_t offset = py * OLED_DISPLAY_HEIGHT + px;
-                    oled_write_raw_byte(0x00, offset);
-                }
-            }
-        }
+        clear_image(last_x, last_y, 32, 32);
         
+        // Draw the new content
         draw_image(image, current_x, targetY, 32, 32, movement_reverse);
+        
+        last_x = current_x;
+        last_y = targetY;
     }
     
     // Toggle movement at the edge of the screen
@@ -434,6 +452,23 @@ void draw_animation_frame(int y, int character)
     {
         if (runCompleted)
         {
+            if (current_animation == ANIMATION_DOWN)
+            {
+                current_y = current_y + 1;
+                if (current_y > 12)
+                {
+                    current_y = 12;
+                }
+            }
+            if (current_animation == ANIMATION_UP)
+            {
+                current_y = current_y - 1;
+                if (current_y < 5)
+                {
+                    current_y = 5;
+                }
+            }
+            
             if (current_animation == ANIMATION_RTOGIL
                 && toggleMovement)
             {
@@ -569,7 +604,7 @@ bool oled_task_user(void)
         
         oled_set_cursor(0, 5);
 
-        render_animation(8, CHARACTER_NEKO);
+        render_animation(current_y, CHARACTER_NEKO);
     } 
     else 
     {
