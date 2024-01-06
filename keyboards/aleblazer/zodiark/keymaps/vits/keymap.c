@@ -71,9 +71,11 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 #define ANIMATION_YAWN 4
 #define ANIMATION_RUN 5
 #define ANIMATION_UP 6
-#define ANIMATION_DOWN 7
-#define ANIMATION_JUMP 8
-#define ANIMATION_RTOGIL 9
+#define ANIMATION_UPRIGHT 7
+#define ANIMATION_DOWN 8
+#define ANIMATION_DOWNRIGHT 9
+#define ANIMATION_JUMP 10
+#define ANIMATION_RTOGIL 11
 
 uint8_t target_animation = 0;
 uint8_t current_animation = 0;
