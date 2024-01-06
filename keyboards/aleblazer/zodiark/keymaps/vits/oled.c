@@ -239,8 +239,9 @@ void render_animation_frame(int y, int character)
     }
     
     if (character == CHARACTER_NEKO
-        && current_animation !=  ANIMATION_SLEEP 
-        && timer_elapsed32(neko_activity_timer) > 10000)
+        && current_animation != ANIMATION_SLEEP 
+        && timer_elapsed32(neko_activity_timer) > 10000
+        && !mouse_chase)
     {
         if (timer_elapsed32(neko_activity_timer) > 26000)
         {
@@ -569,7 +570,7 @@ void render_animation_frame(int y, int character)
             else if (current_animation == ANIMATION_NORMAL)
             {
                 target_animation = ANIMATION_RTOGIL;
-                target_animation_runs = 3;
+                target_animation_runs = 2;
                 flipped = false;
             }
             else if (current_animation == ANIMATION_RTOGIL)
@@ -587,7 +588,7 @@ void render_animation_frame(int y, int character)
                     
                     current_animation = ANIMATION_NORMAL;
                     target_animation = ANIMATION_RTOGIL;
-                    target_animation_runs = 3;
+                    target_animation_runs = 2;
                 }
             }
             else
@@ -688,7 +689,7 @@ void render_animation_frame(int y, int character)
             {
                 // Sometimes, neko decides not to chase the mouse after seeing it
                 if (current_animation == ANIMATION_AWAKE
-                    && rand() % 10 >= 8)
+                    && rand() % 10 >= 7)
                 {
                     target_animation = ANIMATION_SLEEP;
                     target_animation_runs = 0;
