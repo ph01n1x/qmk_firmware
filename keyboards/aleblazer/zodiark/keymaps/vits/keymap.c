@@ -81,6 +81,9 @@ uint8_t target_animation = 0;
 uint8_t current_animation = 0;
 uint8_t target_animation_runs = 0;
 
+// For triggering mouse manually
+bool mouse_triggered = false;
+
 uint32_t keyevent_timer = 0;
 
 // Handling of super Alt+Tab / Ctrl+Tab
@@ -161,6 +164,10 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record)
             {
                 encoder2_mode = (encoder2_mode + 1) % 4;
             }
+            break;
+            
+        case KC_MPLY:
+            mouse_triggered = true;
             break;
     }
     

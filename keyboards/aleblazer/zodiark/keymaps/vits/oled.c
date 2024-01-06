@@ -77,6 +77,7 @@ bool flipped = false;
 uint32_t last_action_timer = 0;
 
 bool mouse_chase = false;
+uint32_t mouse_chase_timer = 0;
 int8_t mouse_chase_random = 0;
 int8_t mouse_chase_x = 0;
 int8_t mouse_chase_y = 0;
@@ -129,7 +130,7 @@ void render_mouse(void)
         mouse_x -= 8;
         
         // Wake up neko 
-        if (mouse_x <= 32 && !mouse_chase)
+        if (mouse_x <= 32 && !mouse_chase && timer_elapsed32(mouse_chase_timer) > 5000)
         {
             target_animation = ANIMATION_AWAKE;
             target_animation_runs = 1;
@@ -137,6 +138,7 @@ void render_mouse(void)
             mouse_chase_x = 0;
             mouse_chase_y = mouse_y;
             mouse_chase = true;
+            mouse_chase_timer = timer_read32();
         }
     }
     else
@@ -144,7 +146,7 @@ void render_mouse(void)
         mouse_x += 8;
         
         // Wake up neko
-        if (mouse_x >= 16 && !mouse_chase)
+        if (mouse_x >= 16 && !mouse_chase && timer_elapsed32(mouse_chase_timer) > 5000)
         {
             target_animation = ANIMATION_AWAKE;
             target_animation_runs = 1;
@@ -152,6 +154,7 @@ void render_mouse(void)
             mouse_chase_x = 31;
             mouse_chase_y = mouse_y;
             mouse_chase = true;
+            mouse_chase_timer = timer_read32();
         }
     }
 }
@@ -188,9 +191,11 @@ void render_animation_frame(int y, int character)
         {
             mouse_timer = timer_read32();
         }
-        else if (timer_elapsed32(mouse_timer) > 15000 + mouse_chase_random * 10000 
+        else if ((mouse_triggered || timer_elapsed32(mouse_timer) > 15000 + mouse_chase_random * 10000)
             && !mouse_is_active && !mouse_chase)
         {
+            mouse_triggered = false;
+            
             // Activate mouse on the same side of the neko
             if (current_x <= 15)
             {
@@ -681,89 +686,101 @@ void render_animation_frame(int y, int character)
             
             if (runCompleted)
             {
-                if (current_y < target_chase_y)
+                // Sometimes, neko decides not to chase the mouse after seeing it
+                if (current_animation == ANIMATION_AWAKE
+                    && rand() % 10 >= 8)
                 {
-                    target_animation = ANIMATION_DOWN;
-                    target_animation_runs = 1;
+                    target_animation = ANIMATION_SLEEP;
+                    target_animation_runs = 0;
                     
-                    if (current_x < mouse_chase_x)
-                    {
-                        target_animation = ANIMATION_DOWNRIGHT;
-                        
-                        if (movement_reverse)
-                        {
-                            toggleMovement = true;
-                        }
-                    }
-                    else if (current_x > mouse_chase_x)
-                    {
-                        target_animation = ANIMATION_DOWNRIGHT;
-                        
-                        if (!movement_reverse)
-                        {
-                            toggleMovement = true;
-                        }
-                    }
-                }
-                else if (current_y > target_chase_y)
-                {
-                    target_animation = ANIMATION_UP;
-                    target_animation_runs = 1;
-                    
-                    if (current_x < mouse_chase_x)
-                    {
-                        target_animation = ANIMATION_UPRIGHT;
-                        
-                        if (movement_reverse)
-                        {
-                            toggleMovement = true;
-                        }
-                    }
-                    else if (current_x > mouse_chase_x)
-                    {
-                        target_animation = ANIMATION_UPRIGHT;
-                        
-                        if (!movement_reverse)
-                        {
-                            toggleMovement = true;
-                        }
-                    }
+                    mouse_chase = false;
                 }
                 else
                 {
-                    if (current_x < mouse_chase_x)
+                    if (current_y < target_chase_y)
                     {
-                    
-                        target_animation = ANIMATION_RUN;
+                        target_animation = ANIMATION_DOWN;
                         target_animation_runs = 1;
                         
-                        if (movement_reverse)
+                        if (current_x < mouse_chase_x)
                         {
-                            toggleMovement = true;
+                            target_animation = ANIMATION_DOWNRIGHT;
+                            
+                            if (movement_reverse)
+                            {
+                                toggleMovement = true;
+                            }
+                        }
+                        else if (current_x > mouse_chase_x)
+                        {
+                            target_animation = ANIMATION_DOWNRIGHT;
+                            
+                            if (!movement_reverse)
+                            {
+                                toggleMovement = true;
+                            }
                         }
                     }
-                    else if (current_x > mouse_chase_x)
+                    else if (current_y > target_chase_y)
                     {
-                        target_animation = ANIMATION_RUN;
+                        target_animation = ANIMATION_UP;
                         target_animation_runs = 1;
                         
-                        if (!movement_reverse)
+                        if (current_x < mouse_chase_x)
                         {
-                            toggleMovement = true;
+                            target_animation = ANIMATION_UPRIGHT;
+                            
+                            if (movement_reverse)
+                            {
+                                toggleMovement = true;
+                            }
+                        }
+                        else if (current_x > mouse_chase_x)
+                        {
+                            target_animation = ANIMATION_UPRIGHT;
+                            
+                            if (!movement_reverse)
+                            {
+                                toggleMovement = true;
+                            }
                         }
                     }
-                    else 
+                    else
                     {
-                        if (current_animation != ANIMATION_RTOGIL)
+                        if (current_x < mouse_chase_x)
                         {
-                            target_animation = ANIMATION_RTOGIL;
-                            target_animation_runs = 3;
+                        
+                            target_animation = ANIMATION_RUN;
+                            target_animation_runs = 1;
+                            
+                            if (movement_reverse)
+                            {
+                                toggleMovement = true;
+                            }
                         }
-                        else
+                        else if (current_x > mouse_chase_x)
                         {
-                            mouse_chase = false;
-                            target_animation = ANIMATION_KAKI;
-                            target_animation_runs = 3;                   
+                            target_animation = ANIMATION_RUN;
+                            target_animation_runs = 1;
+                            
+                            if (!movement_reverse)
+                            {
+                                toggleMovement = true;
+                            }
+                        }
+                        else 
+                        {
+                            if (current_animation != ANIMATION_RTOGIL)
+                            {
+                                target_animation = ANIMATION_RTOGIL;
+                                target_animation_runs = 3;
+                            }
+                            else
+                            {
+                                mouse_chase = false;
+                                target_animation = ANIMATION_KAKI;
+                                target_animation_runs = 3;                   
+                            }
                         }
                     }
                 }
