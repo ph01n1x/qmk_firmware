@@ -77,6 +77,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 #define ANIMATION_JUMP 10
 #define ANIMATION_RTOGIL 11
 
+bool new_animation_set = false;
 uint8_t target_animation = 0;
 uint8_t current_animation = 0;
 uint8_t target_animation_runs = 0;
@@ -114,17 +115,18 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record)
 {
     keyevent_timer = timer_read32();
     is_oled_enabled = true;
-    target_animation = ANIMATION_RUN;
     
     switch (keycode) 
     {
         case KC_UP:
         case KC_PGUP:
-            if (current_animation != ANIMATION_UP)
+        if (current_animation != ANIMATION_DOWN)
             {
                 target_animation = ANIMATION_UP;
-                target_animation_runs = 2;
             }
+            
+            target_animation_runs = 2;
+            new_animation_set = true;
             break;
             
         case KC_DOWN:  
@@ -132,8 +134,10 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record)
             if (current_animation != ANIMATION_DOWN)
             {
                 target_animation = ANIMATION_DOWN;
-                target_animation_runs = 2;
             }
+            
+            target_animation_runs = 2;
+            new_animation_set = true;
             break;
         
         case KC_TAB:
@@ -145,8 +149,10 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record)
             if (current_animation != ANIMATION_JUMP)
             {
                 target_animation = ANIMATION_JUMP;
-                target_animation_runs = 1;
             }
+            
+            target_animation_runs = 1;
+            new_animation_set = true;
             break;
 
         case MT(MOD_LCTL, KC_BSPC):
@@ -154,8 +160,13 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record)
         case KC_BSPC:
         case KC_DELETE:
         case KC_ENTER:
-            target_animation = ANIMATION_RTOGIL;
+            if (current_animation != ANIMATION_RTOGIL)
+            {
+                target_animation = ANIMATION_RTOGIL;
+            }
+            
             target_animation_runs = 3;
+            new_animation_set = true;
             break;
 
         case KC_F24:
@@ -167,7 +178,18 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record)
             break;
             
         case KC_MPLY:
+            // Media play / pause only triggers the mouse
             mouse_triggered = true;
+            break;
+            
+        default:
+            if (current_animation != ANIMATION_RUN)
+            {
+                target_animation = ANIMATION_RUN;
+            }
+            
+            target_animation_runs = 2;
+            new_animation_set = true;
             break;
     }
     

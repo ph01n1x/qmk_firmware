@@ -86,8 +86,8 @@ bool mouse_is_active = false;
 uint32_t mouse_timer = 0;
 int8_t mouse_x = 0;
 int8_t mouse_y = 0;
-int8_t mouse_last_x = 0;
-int8_t mouse_last_y = 0;
+int8_t mouse_last_x = -1;
+int8_t mouse_last_y = -1;
 bool mouse_movement_reverse = false;
 
 #define CHARACTER_NEKO 0
@@ -109,16 +109,24 @@ void render_mouse(void)
 
     if (mouse_x < 0 || mouse_x > 48)
     {
-        clear_image(mouse_last_x, mouse_last_y, 16, 8);
+        if (mouse_last_x >= 0 && mouse_last_y >= 0)
+        {
+            clear_image(mouse_last_x, mouse_last_y, 16, 8);
+        }
         
         mouse_is_active = false;
         mouse_x = 0;
+        mouse_last_x = -1;
+        mouse_last_y = -1;
         
         return;
     }
         
     // Draw the new content
-    clear_image(mouse_last_x, mouse_last_y, 16, 8);
+    if (mouse_last_x >= 0 && mouse_last_y >= 0)
+    {
+        clear_image(mouse_last_x, mouse_last_y, 16, 8);
+    }
     
     draw_image(mouse, mouse_x, mouse_y, 16, 8, mouse_movement_reverse);
     
@@ -134,6 +142,7 @@ void render_mouse(void)
         {
             target_animation = ANIMATION_AWAKE;
             target_animation_runs = 1;
+            new_animation_set = true;
             
             mouse_chase_x = 0;
             mouse_chase_y = mouse_y;
@@ -150,6 +159,7 @@ void render_mouse(void)
         {
             target_animation = ANIMATION_AWAKE;
             target_animation_runs = 1;
+            new_animation_set = true;
             
             mouse_chase_x = 31;
             mouse_chase_y = mouse_y;
@@ -162,18 +172,25 @@ void render_mouse(void)
 // Draws one frame of the animation sequence
 void render_animation_frame(int y, int character) 
 {
-    // First animation after sleep will always be awake
-    if (current_animation != target_animation)
+    // Handles when a new animation is set
+    if (current_animation != target_animation || new_animation_set)
     {
-        if (current_animation == ANIMATION_SLEEP)
+        // First animation after sleep will always be awake
+        if (current_animation != target_animation 
+            && current_animation == ANIMATION_SLEEP)
         {
             target_animation = ANIMATION_AWAKE;
             target_animation_runs = 2;
         }
         
-        current_animation = target_animation; 
-        current_frame = 0;
+        if (current_animation != target_animation)
+        {
+            current_animation = target_animation; 
+            current_frame = 0;
+        }
+        
         current_animation_runs = 0;
+        new_animation_set = false;
     }
     
     // Generate random mouse event
@@ -251,6 +268,7 @@ void render_animation_frame(int y, int character)
             }
             current_animation = ANIMATION_SLEEP;
             target_animation = current_animation;
+            target_animation_runs = 0;
         }
         else if (timer_elapsed32(neko_activity_timer) > 22000)
         {
@@ -260,6 +278,7 @@ void render_animation_frame(int y, int character)
             }
             current_animation = ANIMATION_YAWN;
             target_animation = current_animation;
+            target_animation_runs = 0;
         }   
         else if (timer_elapsed32(neko_activity_timer) > 18000)
         {
@@ -269,6 +288,7 @@ void render_animation_frame(int y, int character)
             }
             current_animation = ANIMATION_KAKI;
             target_animation = current_animation;
+            target_animation_runs = 0;
         }              
         else if (timer_elapsed32(neko_activity_timer) > 10000)
         {
@@ -278,6 +298,7 @@ void render_animation_frame(int y, int character)
             }
             current_animation = ANIMATION_NORMAL;
             target_animation = current_animation;
+            target_animation_runs = 0;
         }  
     }
     
@@ -511,14 +532,16 @@ void render_animation_frame(int y, int character)
     }
     
     // Toggle movement at the edge of the screen
-    if (runCompleted 
+    if (runCompleted
+        && !mouse_chase    
         && current_animation == ANIMATION_RTOGIL
         && (current_x <= 0 || current_x >=31))
     {
         toggleMovement = true;
         
         target_animation = ANIMATION_RUN;
-        target_animation_runs = 0;
+        target_animation_runs = 2;
+        new_animation_set = true;
     }
              
     // Move the position if running or jumping
@@ -536,16 +559,23 @@ void render_animation_frame(int y, int character)
             current_x += 3;
         }
         
-        if ((movement_reverse && current_x <= 0)
+        if (((movement_reverse && current_x <= 0)
             || (!movement_reverse && current_x >= 31))
+            && !mouse_chase)
         {
             target_animation = ANIMATION_RTOGIL;
             target_animation_runs = 1;
             
-            if (character == CHARACTER_SAKURA)
+            if (character == CHARACTER_NEKO && mouse_chase)
             {
                 target_animation_runs = 3;
             }
+            else if (character == CHARACTER_SAKURA)
+            {
+                target_animation_runs = 3;
+            }
+            
+            new_animation_set = true;
         }
     } 
             
@@ -572,6 +602,7 @@ void render_animation_frame(int y, int character)
                 target_animation = ANIMATION_RTOGIL;
                 target_animation_runs = 2;
                 flipped = false;
+                new_animation_set = true;
             }
             else if (current_animation == ANIMATION_RTOGIL)
             {
@@ -581,14 +612,15 @@ void render_animation_frame(int y, int character)
                     
                     target_animation = ANIMATION_NORMAL;
                     target_animation_runs = 3;
+                    new_animation_set = true;
                 }
                 else
                 {
                     flipped = true;
                     
-                    current_animation = ANIMATION_NORMAL;
                     target_animation = ANIMATION_RTOGIL;
                     target_animation_runs = 2;
+                    new_animation_set = true;
                 }
             }
             else
@@ -596,6 +628,7 @@ void render_animation_frame(int y, int character)
                 target_animation = ANIMATION_NORMAL;
                 target_animation_runs = 3;
                 flipped = false;
+                new_animation_set = true;
                 
                 last_action_timer = timer_read32();
             }
@@ -614,26 +647,31 @@ void render_animation_frame(int y, int character)
                     {
                         target_animation = ANIMATION_RUN;
                         target_animation_runs = 2;
+                        new_animation_set = true;
                     }
                     else if (random_action_number > 15)
                     {
                         target_animation = ANIMATION_JUMP;
                         target_animation_runs = 3;
+                        new_animation_set = true;
                     }
                     else if (random_action_number > 10)
                     {
                         target_animation = ANIMATION_UP;
                         target_animation_runs = 3;
+                        new_animation_set = true;
                     }
                     else if (random_action_number > 5)
                     {
                         target_animation = ANIMATION_DOWN;
                         target_animation_runs = 3;
+                        new_animation_set = true;
                     }  
                     else
                     {
                         target_animation = ANIMATION_AWAKE;
                         target_animation_runs = 2;
+                        new_animation_set = true;
                     }
 
                     last_action_timer = timer_read32();                    
@@ -693,6 +731,7 @@ void render_animation_frame(int y, int character)
                 {
                     target_animation = ANIMATION_SLEEP;
                     target_animation_runs = 0;
+                    new_animation_set = true;
                     
                     mouse_chase = false;
                 }
@@ -702,10 +741,12 @@ void render_animation_frame(int y, int character)
                     {
                         target_animation = ANIMATION_DOWN;
                         target_animation_runs = 1;
+                        new_animation_set = true;
                         
                         if (current_x < mouse_chase_x)
                         {
                             target_animation = ANIMATION_DOWNRIGHT;
+                            new_animation_set = true;
                             
                             if (movement_reverse)
                             {
@@ -726,6 +767,7 @@ void render_animation_frame(int y, int character)
                     {
                         target_animation = ANIMATION_UP;
                         target_animation_runs = 1;
+                        new_animation_set = true;
                         
                         if (current_x < mouse_chase_x)
                         {
@@ -750,9 +792,9 @@ void render_animation_frame(int y, int character)
                     {
                         if (current_x < mouse_chase_x)
                         {
-                        
                             target_animation = ANIMATION_RUN;
                             target_animation_runs = 1;
+                            new_animation_set = true;
                             
                             if (movement_reverse)
                             {
@@ -763,13 +805,14 @@ void render_animation_frame(int y, int character)
                         {
                             target_animation = ANIMATION_RUN;
                             target_animation_runs = 1;
+                            new_animation_set = true;
                             
                             if (!movement_reverse)
                             {
                                 toggleMovement = true;
                             }
                         }
-                        else 
+                        else
                         {
                             if (current_animation != ANIMATION_RTOGIL)
                             {
@@ -780,7 +823,15 @@ void render_animation_frame(int y, int character)
                             {
                                 mouse_chase = false;
                                 target_animation = ANIMATION_KAKI;
-                                target_animation_runs = 3;                   
+                                target_animation_runs = 3;
+                                new_animation_set = true;      
+                                
+                                // Set the correct movement direction once the chase is completed
+                                if ((mouse_chase_x == 0 && movement_reverse)
+                                    || (mouse_chase_x > 0 && !movement_reverse))
+                                {
+                                    toggleMovement = true;
+                                }       
                             }
                         }
                     }
@@ -807,6 +858,7 @@ void render_animation_frame(int y, int character)
             {
                 target_animation = ANIMATION_RUN;
                 target_animation_runs = 1;
+                new_animation_set = true;
             }
         }
         else if (runCompleted)
@@ -822,11 +874,13 @@ void render_animation_frame(int y, int character)
             {
                 target_animation = ANIMATION_RUN;
                 target_animation_runs = 0;
+                new_animation_set = true;
             }
             else
             {
                 target_animation = ANIMATION_NORMAL;
                 target_animation_runs = 0;
+                new_animation_set = true;
             }
         }
     }
